@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a56db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Aplikasi pencatatan replenish barang untuk staff supermarket">
+    
+    <title>Replenish Tracker Pro</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json,{
+        &quot;name&quot;:&quot;Replenish Tracker Pro&quot;,
+        &quot;short_name&quot;:&quot;Replenish Pro&quot;,
+        &quot;description&quot;:&quot;Pencatatan replenish barang supermarket&quot;,
+        &quot;theme_color&quot;:&quot;#1a56db&quot;,
+        &quot;background_color&quot;:&quot;#f3f4f6&quot;,
+        &quot;display&quot;:&quot;standalone&quot;,
+        &quot;orientation&quot;:&quot;portrait&quot;,
+        &quot;icons&quot;:[
+            {&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a56db'/%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='50' fill='white' font-family='Arial'%3ER%3C/text%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;512x512&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}
+        ]
+    }">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google ML Kit Barcode Scanner (via CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@google/ml-kit-barcode-scanning@1.0.0/dist/ml-kit-barcode-scanning.min.js"></script>
+    
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --primary: #1a56db;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --radius: 12px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-900);
+            font-size: 16px;
+            line-height: 1.5;
+            overflow: hidden;
+        }
+        
+        /* ===== APP CONTAINER ===== */
+        #app {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--gray-50);
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+        }
+        
+        /* ===== HEADER ===== */
+        .app-header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            padding-top: max(16px, env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
+        }
+        
+        .app-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .app-header h1 i {
+            font-size: 22px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .header-actions button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .header-actions button:active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .offline-badge {
+            font-size: 11px;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 10px;
+            border-radius: 20px;
+            display: none;
+            font-weight: 600;
+        }
+        
+        .offline-badge.show {
+            display: inline-block;
+        }
+        
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px 16px 80px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* ===== VIEWS ===== */
+        .view {
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .stat-card .stat-number {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+        
+        .stat-card .stat-label {
+            font-size: 11px;
+            color: var(--gray-500);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        
+        .stat-card.danger .stat-number { color: var(--danger); }
+        .stat-card.success .stat-number { color: var(--success); }
+        .stat-card.warning .stat-number { color: var(--warning); }
+        
+        /* ===== QUICK ACTIONS ===== */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-actions button {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius);
+            padding: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .quick-actions button:active {
+            transform: scale(0.97);
+            background: var(--gray-50);
+        }
+        
+        .quick-actions button i {
+            font-size: 18px;
+            color: var(--primary);
+        }
+        
+        .quick-actions button.scan-btn {
+            background: linear-gradient(135deg, #1a56db, #3b82f6);
+            color: white;
+            border: none;
+        }
+        
+        .quick-actions button.scan-btn i {
+            color: white;
+        }
+        
+        /* ===== SECTION TITLE ===== */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .section-title .badge {
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--primary);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+        
+        /* ===== PRODUCT / ITEM LIST ===== */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .item-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .item-card:active {
+            transform: scale(0.98);
+        }
+        
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .item-info .name {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--gray-800);
+        }
+        
+        .item-info .detail {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-top: 2px;
+        }
+        
+        .item-info .barcode-badge {
+            display: inline-block;
+            font-size: 10px;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-family: monospace;
+            margin-top: 2px;
+        }
+        
+        .item-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+        
+        .item-status.pending {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .item-status.done {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .item-status.urgent {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        /* ===== FORM ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+        }
+        
+        .form-group .input-with-scan {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .form-group .input-with-scan input {
+            flex: 1;
+        }
+        
+        .form-group .input-with-scan button {
+            padding: 12px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 18px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .form-group .input-with-scan button:active {
+            background: var(--primary-dark);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: white;
+            color: var(--gray-800);
+            -webkit-appearance: none;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:active {
+            transform: scale(0.97);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
+        }
+        
+        .btn-primary:active {
+            background: var(--primary-dark);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-outline {
+            background: white;
+            color: var(--gray-700);
+            border: 2px solid var(--gray-200);
+        }
+        
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-400);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            color: var(--gray-600);
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        
+        .empty-state p {
+            font-size: 14px;
+        }
+        
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            max-width: 440px;
+            width: calc(100% - 32px);
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: var(--gray-900);
+            color: white;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            pointer-events: auto;
+            animation: slideDown 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.warning { background: var(--warning); }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ===== BOTTOM NAV ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            padding: 8px 0 calc(8px + var(--safe-bottom));
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        
+        .bottom-nav button {
+            flex: 1;
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gray-400);
+            cursor: pointer;
+            transition: color 0.2s;
+            font-family: inherit;
+        }
+        
+        .bottom-nav button i {
+            font-size: 22px;
+        }
+        
+        .bottom-nav button.active {
+            color: var(--primary);
+        }
+        
+        .bottom-nav button:active {
+            transform: scale(0.92);
+        }
+        
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal {
+            background: white;
+            border-radius: var(--radius) var(--radius) 0 0;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
+            padding: 20px 20px calc(20px + var(--safe-bottom));
+            animation: slideUp 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-400);
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        /* ===== SCANNER OVERLAY ===== */
+        .scanner-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .scanner-overlay.show {
+            display: flex;
+        }
+        
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            aspect-ratio: 1/1;
+            background: #000;
+            overflow: hidden;
+        }
+        
+        #scannerVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scanner-overlay .scanner-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 8px;
+            box-shadow: 0 0 0 5000px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        
+        .scanner-overlay .scanner-line {
+            position: absolute;
+            top: 50%;
+            left: 15%;
+            width: 70%;
+            height: 2px;
+            background: #00ff00;
+            animation: scanMove 2s ease-in-out infinite;
+            box-shadow: 0 0 10px #00ff00;
+            pointer-events: none;
+        }
+        
+        @keyframes scanMove {
+            0%, 100% { transform: translateY(-50%); }
+            50% { transform: translateY(50%); }
+        }
+        
+        .scanner-overlay .scanner-controls {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 0 20px;
+        }
+        
+        .scanner-overlay .scanner-controls button {
+            padding: 14px 32px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .scanner-overlay .scanner-controls button:active {
+            transform: scale(0.95);
+        }
+        
+        .scanner-overlay .scanner-controls .btn-close-scanner {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .scanner-overlay .scanner-controls .btn-close-scanner:active {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .scanner-overlay .scanner-status {
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 8px;
+            margin-top: 16px;
+            max-width: 90%;
+        }
+        
+        /* ===== SEARCH BAR ===== */
+        .search-bar {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        
+        .search-bar i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 12px 14px 12px 44px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+        }
+        
+        /* ===== SYNC STATUS ===== */
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--gray-500);
+            padding: 8px 12px;
+            background: var(--gray-100);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+        }
+        
+        .sync-status .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+        }
+        
+        .sync-status .sync-dot.syncing {
+            background: var(--warning);
+            animation: pulse 1s infinite;
+        }
+        
+        .sync-status .sync-dot.error {
+            background: var(--danger);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* ===== SCROLLBAR ===== */
+        .main-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .main-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .main-content::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 10px;
+        }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (min-width: 640px) {
+            .stats-grid { gap: 12px; }
+            .stat-card .stat-number { font-size: 30px; }
+        }
+        
+        @media (max-width: 380px) {
+            .stat-card .stat-number { font-size: 20px; }
+            .item-card { padding: 12px; }
+            .app-header h1 { font-size: 17px; }
+        }
+        
+        /* ===== LOADING SPINNER ===== */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ===== UTILITY ===== */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 8px; }
+        .mb-2 { margin-bottom: 8px; }
+        .gap-2 { gap: 8px; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+    </style>
+</head>
+<body>
+    
+<div id="app">
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <h1><i class="fas fa-boxes"></i> Replenish Pro</h1>
+        <div class="header-actions">
+            <span class="offline-badge" id="offlineBadge"><i class="fas fa-wifi-slash"></i> Offline</span>
+            <button onclick="syncToSpreadsheet()" title="Sync ke Spreadsheet" id="syncBtn">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </button>
+            <button onclick="refreshData()" title="Refresh" id="refreshBtn">
+                <i class="fas fa-sync"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content" id="mainContent">
+        
+        <!-- ===== VIEW: DASHBOARD ===== -->
+        <div class="view active" id="viewDashboard">
+            <!-- Sync Status -->
+            <div class="sync-status" id="syncStatus">
+                <span class="sync-dot" id="syncDot"></span>
+                <span id="syncText">Online - Siap sync</span>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">Total Item</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-number" id="statPending">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-number" id="statDone">0</div>
+                    <div class="stat-label">Selesai</div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button onclick="openForm()">
+                    <i class="fas fa-plus-circle"></i> Tambah Manual
+                </button>
+                <button class="scan-btn" onclick="startScanner()">
+                    <i class="fas fa-camera"></i> Scan Barcode
+                </button>
+            </div>
+            
+            <!-- Recent Items -->
+            <div class="section-title">
+                <span>🔄 Perlu Replenish</span>
+                <span class="badge" id="recentBadge">0</span>
+            </div>
+            <div class="item-list" id="recentList">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Belum ada data</h3>
+                    <p>Tambahkan barang yang perlu direplenish</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== VIEW: REPLENISH LIST ===== -->
+        <div class="view" id="viewReplenish">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Cari barang atau barcode..." oninput="filterItems()">
+            </div>
+            
+            <div class="section-title">
+                <span>📋 Semua Item</span>
+                <button onclick="openForm()" style="background:none;border:none;color:var(--primary);font-size:20px;cursor:pointer;">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            </div>
+            
+            <div class="item-list" id="allItemsList">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Belum ada data</h3>
+                    <p>Mulai tambahkan barang sekarang</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== VIEW: HISTORY ===== -->
+        <div class="view" id="viewHistory">
+            <div class="section-title">
+                <span>📊 Riwayat</span>
+                <button onclick="clearHistory()" style="background:none;border:none;color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-trash"></i> Hapus
+                </button>
+            </div>
+            <div class="item-list" id="historyList">
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <h3>Riwayat kosong</h3>
+                    <p>Belum ada aktivitas tercatat</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- ===== BOTTOM NAV ===== -->
+    <nav class="bottom-nav">
+        <button class="active" data-view="dashboard" onclick="switchView('dashboard')">
+            <i class="fas fa-home"></i>
+            <span>Beranda</span>
+        </button>
+        <button data-view="replenish" onclick="switchView('replenish')">
+            <i class="fas fa-clipboard-list"></i>
+            <span>Daftar</span>
+        </button>
+        <button data-view="history" onclick="switchView('history')">
+            <i class="fas fa-clock"></i>
+            <span>Riwayat</span>
+        </button>
+    </nav>
+</div>
+
+<!-- ===== MODAL FORM ===== -->
+<div class="modal-overlay" id="modalForm">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Tambah Barang</h2>
+            <button class="modal-close" onclick="closeForm()">&times;</button>
+        </div>
+        
+        <form id="itemForm" onsubmit="saveItem(event)">
+            <input type="hidden" id="editId">
+            
+            <div class="form-group">
+                <label for="itemBarcode">Barcode</label>
+                <div class="input-with-scan">
+                    <input type="text" id="itemBarcode" placeholder="Scan atau masukkan barcode">
+                    <button type="button" onclick="startScanner()">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="itemName">Nama Barang *</label>
+                <input type="text" id="itemName" placeholder="Contoh: Indomie Goreng" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="itemQuantity">Jumlah Dibutuhkan *</label>
+                <input type="number" id="itemQuantity" placeholder="Contoh: 10" min="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="itemCategory">Kategori</label>
+                <select id="itemCategory">
+                    <option value="Makanan">Makanan</option>
+                    <option value="Minuman">Minuman</option>
+                    <option value="Snack">Snack</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Fresh">Fresh</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="itemNote">Catatan (opsional)</label>
+                <textarea id="itemNote" placeholder="Contoh: Rak bagian bawah kosong"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Simpan
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== SCANNER OVERLAY ===== -->
+<div class="scanner-overlay" id="scannerOverlay">
+    <div class="scanner-container">
+        <video id="scannerVideo" autoplay playsinline></video>
+        <div class="scanner-frame"></div>
+        <div class="scanner-line"></div>
+    </div>
+    <div class="scanner-status" id="scannerStatus">Mengarahkan kamera ke barcode...</div>
+    <div class="scanner-controls">
+        <button class="btn-close-scanner" onclick="stopScanner()">
+            <i class="fas fa-times"></i> Tutup
+        </button>
+        <button class="btn-close-scanner" onclick="toggleFlashlight()" style="background:rgba(255,255,255,0.2);">
+            <i class="fas fa-bolt"></i> Lampu
+        </button>
+    </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================
+//  DATA LAYER
+// ============================================================
+
+const STORAGE_KEY = 'replenish_data';
+const HISTORY_KEY = 'replenish_history';
+const SYNC_KEY = 'replenish_sync_queue';
+
+// Default data untuk demo
+const defaultData = [
+    { id: '1', barcode: '8991234567890', name: 'Indomie Goreng', quantity: 20, category: 'Makanan', note: 'Rak hampir kosong', status: 'pending', createdAt: Date.now() - 3600000 },
+    { id: '2', barcode: '8999876543210', name: 'Coca Cola 500ml', quantity: 15, category: 'Minuman', note: 'Stok menipis', status: 'pending', createdAt: Date.now() - 7200000 },
+    { id: '3', barcode: '', name: 'Pocky Stick', quantity: 8, category: 'Snack', note: '', status: 'done', createdAt: Date.now() - 86400000 },
+];
+
+// State
+let items = [];
+let history = [];
+let syncQueue = [];
+let currentView = 'dashboard';
+let editId = null;
+
+// Scanner state
+let scannerActive = false;
+let scannerStream = null;
+let scannerBarcodeDetector = null;
+
+// ============================================================
+//  INIT
+// ============================================================
+
+function init() {
+    loadData();
+    renderAll();
+    setupServiceWorker();
+    setupOfflineListener();
+    updateSyncStatus();
+    checkBarcodeSupport();
+}
+
+// ============================================================
+//  DATA MANAGEMENT
+// ============================================================
+
+function loadData() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const storedHistory = localStorage.getItem(HISTORY_KEY);
+    const storedSync = localStorage.getItem(SYNC_KEY);
+    
+    items = stored ? JSON.parse(stored) : defaultData;
+    history = storedHistory ? JSON.parse(storedHistory) : [];
+    syncQueue = storedSync ? JSON.parse(storedSync) : [];
+    
+    if (!stored) saveData();
+}
+
+function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    localStorage.setItem(SYNC_KEY, JSON.stringify(syncQueue));
+}
+
+function addHistory(action, item) {
+    history.unshift({
+        id: Date.now().toString(),
+        action: action,
+        itemName: item.name,
+        quantity: item.quantity,
+        barcode: item.barcode || '-',
+        timestamp: Date.now()
+    });
+    
+    if (history.length > 100) history = history.slice(0, 100);
+    saveData();
+}
+
+// ============================================================
+//  CRUD OPERATIONS
+// ============================================================
+
+function addItem(name, quantity, category, note, barcode) {
+    const newItem = {
+        id: Date.now().toString(),
+        barcode: barcode || '',
+        name: name.trim(),
+        quantity: parseInt(quantity),
+        category: category || 'Lainnya',
+        note: note || '',
+        status: 'pending',
+        createdAt: Date.now()
+    };
+    
+    items.unshift(newItem);
+    saveData();
+    addHistory('Tambah', newItem);
+    
+    // Queue for sync
+    syncQueue.push({ action: 'add', item: newItem });
+    saveData();
+    
+    renderAll();
+    showToast('✅ Barang berhasil ditambahkan', 'success');
+    autoSync();
+}
+
+function updateItem(id, name, quantity, category, note, barcode) {
+    const index = items.findIndex(item => item.id === id);
+    if (index === -1) return;
+    
+    const oldItem = { ...items[index] };
+    items[index] = {
+        ...items[index],
+        barcode: barcode || items[index].barcode || '',
+        name: name.trim(),
+        quantity: parseInt(quantity),
+        category: category || 'Lainnya',
+        note: note || ''
+    };
+    
+    saveData();
+    addHistory('Update', items[index]);
+    
+    // Queue for sync
+    syncQueue.push({ action: 'update', item: items[index] });
+    saveData();
+    
+    renderAll();
+    showToast('✅ Barang berhasil diperbarui', 'success');
+    autoSync();
+}
+
+function deleteItem(id) {
+    if (!confirm('Yakin ingin menghapus item ini?')) return;
+    
+    const item = items.find(i => i.id === id);
+    items = items.filter(i => i.id !== id);
+    saveData();
+    if (item) {
+        addHistory('Hapus', item);
+        syncQueue.push({ action: 'delete', item: item });
+        saveData();
+    }
+    renderAll();
+    showToast('🗑️ Barang dihapus', 'warning');
+    autoSync();
+}
+
+function toggleStatus(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    
+    item.status = item.status === 'pending' ? 'done' : 'pending';
+    saveData();
+    addHistory(item.status === 'done' ? 'Selesai' : 'Batal Selesai', item);
+    
+    syncQueue.push({ action: 'update', item: item });
+    saveData();
+    
+    renderAll();
+    const msg = item.status === 'done' ? '✅ Tandai selesai' : '↩️ Batal selesai';
+    showToast(msg, 'success');
+    autoSync();
+}
+
+// ============================================================
+//  GOOGLE SPREADSHEET SYNC
+// ============================================================
+
+const SPREADSHEET_API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+const API_KEY = 'YOUR_API_KEY';
+
+function updateSyncStatus(message, status = 'online') {
+    const dot = document.getElementById('syncDot');
+    const text = document.getElementById('syncText');
+    
+    dot.className = 'sync-dot';
+    if (status === 'syncing') {
+        dot.classList.add('syncing');
+        text.textContent = message || 'Menyinkronkan...';
+    } else if (status === 'error') {
+        dot.classList.add('error');
+        text.textContent = message || 'Gagal sync';
+    } else if (status === 'offline') {
+        dot.style.display = 'none';
+        text.textContent = '📡 Offline - Data disimpan lokal';
+    } else {
+        dot.style.display = 'inline-block';
+        text.textContent = message || 'Online - Siap sync';
+    }
+}
+
+async function syncToSpreadsheet() {
+    if (!navigator.onLine) {
+        showToast('📡 Tidak ada koneksi internet', 'warning');
+        updateSyncStatus('Offline - Tunggu koneksi', 'offline');
+        return;
+    }
+    
+    if (syncQueue.length === 0) {
+        showToast('✅ Semua data sudah sinkron', 'success');
+        return;
+    }
+    
+    updateSyncStatus(`Menyinkronkan ${syncQueue.length} item...`, 'syncing');
+    
+    try {
+        // Siapkan payload
+        const payload = {
+            apiKey: API_KEY,
+            action: 'batch_sync',
+            data: syncQueue,
+            timestamp: Date.now()
+        };
+        
+        // Kirim ke Google Apps Script
+        const response = await fetch(SPREADSHEET_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) throw new Error('Sync gagal: ' + response.status);
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            syncQueue = [];
+            saveData();
+            showToast(`✅ ${result.synced || syncQueue.length} data tersinkron`, 'success');
+            updateSyncStatus('Tersinkron dengan Spreadsheet', 'online');
+        } else {
+            throw new Error(result.message || 'Gagal sync');
+        }
+        
+    } catch (error) {
+        console.error('Sync error:', error);
+        showToast('⚠️ Gagal sync: ' + error.message, 'error');
+        updateSyncStatus('Gagal sync - Coba lagi', 'error');
+    }
+}
+
+async function autoSync() {
+    if (syncQueue.length > 0 && navigator.onLine) {
+        // Auto sync after 3 seconds idle
+        clearTimeout(window.autoSyncTimer);
+        window.autoSyncTimer = setTimeout(() => {
+            syncToSpreadsheet();
+        }, 3000);
+    }
+}
+
+// ============================================================
+//  BARCODE SCANNER (Google ML Kit)
+// ============================================================
+
+async function checkBarcodeSupport() {
+    if ('BarcodeDetector' in window) {
+        console.log('✅ Barcode Detector supported');
+    } else {
+        console.warn('⚠️ Barcode Detector not supported, using fallback');
+    }
+}
+
+async function startScanner() {
+    const overlay = document.getElementById('scannerOverlay');
+    const video = document.getElementById('scannerVideo');
+    const status = document.getElementById('scannerStatus');
+    
+    // Cek dukungan kamera
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('❌ Kamera tidak didukung di browser ini', 'error');
+        return;
+    }
+    
+    // Cek support BarcodeDetector
+    const isSupported = 'BarcodeDetector' in window;
+    
+    if (!isSupported) {
+        status.textContent = '⚠️ Browser tidak mendukung scan barcode. Masukkan manual.';
+        showToast('⚠️ Scan barcode tidak didukung, gunakan input manual', 'warning');
+        // Tampilkan tetap tapi dengan info
+    }
+    
+    try {
+        // Start camera
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        
+        video.srcObject = stream;
+        scannerStream = stream;
+        await video.play();
+        
+        overlay.classList.add('show');
+        scannerActive = true;
+        status.textContent = '📷 Arahkan kamera ke barcode...';
+        
+        // Setup barcode detector if supported
+        if (isSupported) {
+            scannerBarcodeDetector = new BarcodeDetector({
+                formats: [
+                    'aztec', 'code_128', 'code_39', 'code_93', 'codabar',
+                    'data_matrix', 'ean_13', 'ean_8', 'itf', 'pdf417',
+                    'qr_code', 'upc_a', 'upc_e'
+                ]
+            });
+            
+            // Start scanning loop
+            scanLoop();
+        } else {
+            // Fallback: manual input only
+            status.textContent = 'ℹ️ Scan otomatis tidak tersedia. Masukkan barcode manual.';
+        }
+        
+    } catch (error) {
+        console.error('Camera error:', error);
+        showToast('❌ Gagal akses kamera: ' + error.message, 'error');
+        status.textContent = '❌ Gagal akses kamera';
+    }
+}
+
+async function scanLoop() {
+    if (!scannerActive) return;
+    
+    const video = document.getElementById('scannerVideo');
+    const status = document.getElementById('scannerStatus');
+    
+    if (!scannerBarcodeDetector || !video || video.readyState < 2) {
+        setTimeout(scanLoop, 100);
+        return;
+    }
+    
+    try {
+        const barcodes = await scannerBarcodeDetector.detect(video);
+        
+        if (barcodes.length > 0) {
+            const barcode = barcodes[0];
+            const rawValue = barcode.rawValue;
+            
+            // Vibrate on detection
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            // Success!
+            status.textContent = `✅ Barcode terdeteksi: ${rawValue}`;
+            status.style.background = 'rgba(5, 150, 105, 0.8)';
+            
+            // Stop scanner after 1.5s
+            setTimeout(() => {
+                stopScanner(rawValue);
+            }, 1500);
+            
+            return;
+        }
+        
+        // Continue scanning
+        requestAnimationFrame(scanLoop);
+        
+    } catch (error) {
+        console.error('Scan error:', error);
+        setTimeout(scanLoop, 100);
+    }
+}
+
+function stopScanner(barcodeValue) {
+    scannerActive = false;
+    
+    // Stop video stream
+    if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+    }
+    
+    // Clear video
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = null;
+    video.load();
+    
+    // Hide overlay
+    document.getElementById('scannerOverlay').classList.remove('show');
+    
+    // Reset status
+    const status = document.getElementById('scannerStatus');
+    status.textContent = '📷 Mengarahkan kamera ke barcode...';
+    status.style.background = '';
+    
+    // Fill barcode if found
+    if (barcodeValue) {
+        document.getElementById('itemBarcode').value = barcodeValue;
+        // Auto lookup product by barcode (optional)
+        lookupProductByBarcode(barcodeValue);
+    }
+}
+
+function toggleFlashlight() {
+    // Not all browsers support torch
+    if (!scannerStream) return;
+    
+    const track = scannerStream.getVideoTracks()[0];
+    if (!track) return;
+    
+    try {
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        if (capabilities.torch) {
+            track.applyConstraints({
+                advanced: [{ torch: !track.getSettings().torch }]
+            });
+            showToast('💡 Lampu ' + (track.getSettings().torch ? 'mati' : 'menyala'), 'info');
+        } else {
+            showToast('ℹ️ Lampu kilat tidak tersedia', 'warning');
+        }
+    } catch (e) {
+        console.warn('Flashlight error:', e);
+    }
+}
+
+// ============================================================
+//  BARCODE PRODUCT LOOKUP
+// ============================================================
+
+async function lookupProductByBarcode(barcode) {
+    if (!barcode) return;
+    
+    // Check if product already exists in local data
+    const existing = items.find(item => item.barcode === barcode);
+    if (existing) {
+        showToast(`🔍 Ditemukan: ${existing.name} (${existing.quantity} unit)`, 'info');
+        // Auto fill form
+        document.getElementById('itemName').value = existing.name;
+        document.getElementById('itemCategory').value = existing.category;
+        return;
+    }
+    
+    // Try to lookup from online database (Open Food Facts)
+    try {
+        if (navigator.onLine) {
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+            const data = await response.json();
+            
+            if (data.status === 1 && data.product) {
+                const product = data.product;
+                const name = product.product_name || product.brands || 'Produk Ditemukan';
+                const category = product.categories ? product.categories.split(',')[0].trim() : 'Lainnya';
+                
+                document.getElementById('itemName').value = name;
+                document.getElementById('itemCategory').value = category;
+                showToast(`🔍 Ditemukan: ${name}`, 'success');
+            }
+        }
+    } catch (e) {
+        // Silent fail, just use barcode
+        console.log('Product lookup error:', e);
+    }
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
+
+function renderAll() {
+    renderStats();
+    renderRecent();
+    renderAllItems();
+    renderHistory();
+    updateBadges();
+}
+
+function renderStats() {
+    const total = items.length;
+    const pending = items.filter(i => i.status === 'pending').length;
+    const done = items.filter(i => i.status === 'done').length;
+    
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statDone').textContent = done;
+}
+
+function renderRecent() {
+    const container = document.getElementById('recentList');
+    const recent = items.slice(0, 5);
+    
+    if (recent.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>Belum ada data</h3>
+                <p>Tambahkan barang yang perlu direplenish</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = recent.map(item => createItemCard(item)).join('');
+}
+
+function renderAllItems() {
+    const container = document.getElementById('allItemsList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    
+    let filtered = items;
+    if (search) {
+        filtered = items.filter(i => 
+            i.name.toLowerCase().includes(search) ||
+            i.category.toLowerCase().includes(search) ||
+            (i.barcode && i.barcode.includes(search))
+        );
+    }
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-search"></i>
+                <h3>${search ? 'Tidak ditemukan' : 'Belum ada data'}</h3>
+                <p>${search ? 'Coba kata kunci lain' : 'Mulai tambahkan barang sekarang'}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = filtered.map(item => createItemCard(item)).join('');
+}
+
+function renderHistory() {
+    const container = document.getElementById('historyList');
+    
+    if (history.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-history"></i>
+                <h3>Riwayat kosong</h3>
+                <p>Belum ada aktivitas tercatat</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = history.slice(0, 50).map(h => `
+        <div class="item-card" style="cursor:default;">
+            <div class="item-info">
+                <div class="name">${h.action}: ${h.itemName}</div>
+                <div class="detail">${h.quantity} unit ${h.barcode !== '-' ? '• Barcode: ' + h.barcode : ''} • ${formatTime(h.timestamp)}</div>
+            </div>
+            <span style="font-size:11px;color:var(--gray-400);">${h.action === 'Tambah' ? '➕' : h.action === 'Hapus' ? '🗑️' : h.action === 'Selesai' ? '✅' : '✏️'}</span>
+        </div>
+    `).join('');
+}
+
+function createItemCard(item) {
+    const statusMap = {
+        pending: 'pending',
+        done: 'done'
+    };
+    
+    const statusLabel = {
+        pending: '⏳ Pending',
+        done: '✅ Selesai'
+    };
+    
+    const statusClass = statusMap[item.status] || 'pending';
+    const isPending = item.status === 'pending';
+    
+    return `
+        <div class="item-card">
+            <div class="item-info">
+                <div class="name">${escapeHtml(item.name)}</div>
+                <div class="detail">
+                    ${item.quantity} unit • ${item.category}
+                    ${item.barcode ? `• <span class="barcode-badge"><i class="fas fa-barcode"></i> ${item.barcode}</span>` : ''}
+                    ${item.note ? '• ' + escapeHtml(item.note) : ''}
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span class="item-status ${statusClass}">${statusLabel[item.status]}</span>
+                <button onclick="toggleStatus('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="${isPending ? 'Tandai selesai' : 'Batal selesai'}">
+                    ${isPending ? '✅' : '↩️'}
+                </button>
+                <button onclick="editItem('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Edit">
+                    ✏️
+                </button>
+                <button onclick="deleteItem('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Hapus">
+                    🗑️
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function updateBadges() {
+    const pending = items.filter(i => i.status === 'pending').length;
+    document.getElementById('recentBadge').textContent = pending;
+}
+
+// ============================================================
+//  VIEW NAVIGATION
+// ============================================================
+
+function switchView(view) {
+    currentView = view;
+    
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    
+    const target = document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1));
+    if (target) target.classList.add('active');
+    
+    document.querySelectorAll('.bottom-nav button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    
+    document.getElementById('mainContent').scrollTop = 0;
+}
+
+// ============================================================
+//  FORM HANDLING
+// ============================================================
+
+function openForm(item) {
+    const modal = document.getElementById('modalForm');
+    const title = document.getElementById('modalTitle');
+    const form = document.getElementById('itemForm');
+    
+    if (item) {
+        editId = item.id;
+        document.getElementById('editId').value = item.id;
+        document.getElementById('itemBarcode').value = item.barcode || '';
+        document.getElementById('itemName').value = item.name;
+        document.getElementById('itemQuantity').value = item.quantity;
+        document.getElementById('itemCategory').value = item.category || 'Lainnya';
+        document.getElementById('itemNote').value = item.note || '';
+        title.innerHTML = '<i class="fas fa-edit"></i> Edit Barang';
+    } else {
+        editId = null;
+        document.getElementById('editId').value = '';
+        document.getElementById('itemBarcode').value = '';
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemQuantity').value = '';
+        document.getElementById('itemNote').value = '';
+        document.getElementById('itemCategory').value = 'Makanan';
+        title.innerHTML = '<i class="fas fa-plus-circle"></i> Tambah Barang';
+    }
+    
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('itemName').focus(), 300);
+}
+
+function closeForm() {
+    document.getElementById('modalForm').classList.remove('show');
+    editId = null;
+}
+
+function saveItem(e) {
+    e.preventDefault();
+    
+    const barcode = document.getElementById('itemBarcode').value.trim();
+    const name = document.getElementById('itemName').value.trim();
+    const quantity = document.getElementById('itemQuantity').value;
+    const category = document.getElementById('itemCategory').value;
+    const note = document.getElementById('itemNote').value.trim();
+    const editId = document.getElementById('editId').value;
+    
+    if (!name || !quantity) {
+        showToast('⚠️ Nama dan jumlah harus diisi', 'warning');
+        return;
+    }
+    
+    if (editId) {
+        updateItem(editId, name, quantity, category, note, barcode);
+    } else {
+        addItem(name, quantity, category, note, barcode);
+    }
+    
+    closeForm();
+}
+
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (item) openForm(item);
+}
+
+function filterItems() {
+    renderAllItems();
+}
+
+// ============================================================
+//  UTILITY FUNCTIONS
+// ============================================================
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(timestamp) {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Baru saja';
+    if (minutes < 60) return minutes + ' menit lalu';
+    if (hours < 24) return hours + ' jam lalu';
+    return days + ' hari lalu';
+}
+
+// ============================================================
+//  TOAST NOTIFICATION
+// ============================================================
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ============================================================
+//  REFRESH / CLEAR
+// ============================================================
+
+function refreshData() {
+    const btn = document.getElementById('refreshBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    setTimeout(() => {
+        renderAll();
+        btn.innerHTML = '<i class="fas fa-sync"></i>';
+        showToast('🔄 Data diperbarui', 'success');
+    }, 500);
+}
+
+function clearHistory() {
+    if (!confirm('Yakin ingin menghapus semua riwayat?')) return;
+    history = [];
+    saveData();
+    renderHistory();
+    showToast('🗑️ Riwayat dihapus', 'warning');
+}
+
+// ============================================================
+//  OFFLINE SUPPORT
+// ============================================================
+
+function setupOfflineListener() {
+    const badge = document.getElementById('offlineBadge');
+    
+    function updateOffline() {
+        if (!navigator.onLine) {
+            badge.classList.add('show');
+            updateSyncStatus('Offline - Data disimpan lokal', 'offline');
+        } else {
+            badge.classList.remove('show');
+            updateSyncStatus('Online - Siap sync', 'online');
+            // Auto sync when back online
+            if (syncQueue.length > 0) {
+                showToast('📡 Kembali online, menyinkronkan...', 'info');
+                setTimeout(syncToSpreadsheet, 2000);
+            }
+        }
+    }
+    
+    window.addEventListener('online', updateOffline);
+    window.addEventListener('offline', updateOffline);
+    updateOffline();
+}
+
+// ============================================================
+//  SERVICE WORKER (PWA)
+// ============================================================
+
+function setupServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        // Register SW (will be served from the same origin)
+        try {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('✅ Service Worker registered'))
+                .catch(() => console.log('ℹ️ SW registration skipped'));
+        } catch (e) {}
+    }
+}
+
+// ============================================================
+//  SERVICE WORKER SCRIPT (inline)
+// ============================================================
+
+function registerServiceWorker() {
+    const swCode = `
+        const CACHE_NAME = 'replenish-v2';
+        const urlsToCache = [
+            '/',
+            '/index.html',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
+        ];
+        
+        self.addEventListener('install', event => {
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.addAll(urlsToCache))
+                    .then(() => self.skipWaiting())
+            );
+        });
+        
+        self.addEventListener('activate', event => {
+            event.waitUntil(
+                caches.keys().then(cacheNames => {
+                    return Promise.all(
+                        cacheNames.map(name => {
+                            if (name !== CACHE_NAME) {
+                                return caches.delete(name);
+                            }
+                        })
+                    );
+                }).then(() => self.clients.claim())
+            );
+        });
+        
+        self.addEventListener('fetch', event => {
+            event.respondWith(
+                caches.match(event.request)
+                    .then(response => response || fetch(event.request))
+                    .catch(() => {
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('/');
+                        }
+                    })
+            );
+        });
+    `;
+    
+    try {
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(url)
+                .then(reg => console.log('✅ SW registered'))
+                .catch(() => {});
+        }
+    } catch (e) {}
+}
+
+// ============================================================
+//  KEYBOARD SHORTCUTS
+// ============================================================
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeForm();
+        if (scannerActive) stopScanner();
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        openForm();
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        syncToSpreadsheet();
+    }
+});
+
+// ============================================================
+//  START APP
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    registerServiceWorker();
+    
+    document.getElementById('modalForm').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeForm();
+    });
+});
+
+// ============================================================
+//  EXPOSE TO GLOBAL
+// ============================================================
+
+window.switchView = switchView;
+window.openForm = openForm;
+window.closeForm = closeForm;
+window.saveItem = saveItem;
+window.editItem = editItem;
+window.deleteItem = deleteItem;
+window.toggleStatus = toggleStatus;
+window.refreshData = refreshData;
+window.filterItems = filterItems;
+window.clearHistory = clearHistory;
+window.startScanner = startScanner;
+window.stopScanner = stopScanner;
+window.toggleFlashlight = toggleFlashlight;
+window.syncToSpreadsheet = syncToSpreadsheet;
+
+console.log('🚀 Replenish Tracker Pro siap!');
+console.log('📦 ' + items.length + ' items loaded');
+console.log('📡 ' + syncQueue.length + ' items pending sync');
+</script>
+
+</body>
+</html>
