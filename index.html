@@ -8,11 +8,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="Aplikasi pencatatan replenish barang untuk staff supermarket">
     
-    <title>Replenish Tracker Pro</title>
+    <title>Replenish Requests Gro</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="data:application/json,{
-        &quot;name&quot;:&quot;Replenish Tracker Pro&quot;,
+        &quot;name&quot;:&quot;Replenish Requests Gro&quot;,
         &quot;short_name&quot;:&quot;Replenish Pro&quot;,
         &quot;description&quot;:&quot;Pencatatan replenish barang supermarket&quot;,
         &quot;theme_color&quot;:&quot;#1a56db&quot;,
@@ -28,7 +28,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <style>
-        /* ===== RESET & BASE ===== */
         * {
             margin: 0;
             padding: 0;
@@ -72,7 +71,6 @@
             overflow: hidden;
         }
         
-        /* ===== APP CONTAINER ===== */
         #app {
             height: 100%;
             display: flex;
@@ -84,7 +82,6 @@
             box-shadow: 0 0 40px rgba(0,0,0,0.1);
         }
         
-        /* ===== HEADER ===== */
         .app-header {
             background: var(--primary);
             color: white;
@@ -152,7 +149,6 @@
             display: inline-block;
         }
         
-        /* ===== MAIN CONTENT ===== */
         .main-content {
             flex: 1;
             overflow-y: auto;
@@ -161,7 +157,6 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        /* ===== VIEWS ===== */
         .view {
             display: none;
             animation: fadeUp 0.3s ease;
@@ -176,7 +171,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* ===== STATS CARDS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -213,7 +207,6 @@
         .stat-card.success .stat-number { color: var(--success); }
         .stat-card.warning .stat-number { color: var(--warning); }
         
-        /* ===== QUICK ACTIONS ===== */
         .quick-actions {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -258,7 +251,6 @@
             color: white;
         }
         
-        /* ===== SECTION TITLE ===== */
         .section-title {
             font-size: 16px;
             font-weight: 700;
@@ -278,7 +270,6 @@
             border-radius: 20px;
         }
         
-        /* ===== ITEM LIST ===== */
         .item-list {
             display: flex;
             flex-direction: column;
@@ -361,7 +352,6 @@
             color: var(--success);
         }
         
-        /* ===== FORM ===== */
         .form-group {
             margin-bottom: 16px;
         }
@@ -428,6 +418,11 @@
             box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
         }
         
+        .form-group input[readonly] {
+            background: var(--gray-50);
+            color: var(--gray-600);
+        }
+        
         .form-group textarea {
             resize: vertical;
             min-height: 60px;
@@ -491,20 +486,9 @@
             background: var(--primary-dark);
         }
         
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
         .btn-danger {
             background: var(--danger);
             color: white;
-        }
-        
-        .btn-outline {
-            background: white;
-            color: var(--gray-700);
-            border: 2px solid var(--gray-200);
         }
         
         .btn:disabled {
@@ -512,7 +496,6 @@
             cursor: not-allowed;
         }
         
-        /* ===== EMPTY STATE ===== */
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -535,7 +518,6 @@
             font-size: 14px;
         }
         
-        /* ===== TOAST ===== */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -571,7 +553,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* ===== BOTTOM NAV ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -617,7 +598,6 @@
             transform: scale(0.92);
         }
         
-        /* ===== MODAL ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -678,7 +658,6 @@
             padding: 4px;
         }
         
-        /* ===== SCANNER OVERLAY ===== */
         .scanner-overlay {
             position: fixed;
             inset: 0;
@@ -785,7 +764,6 @@
             max-width: 90%;
         }
         
-        /* ===== SEARCH BAR ===== */
         .search-bar {
             position: relative;
             margin-bottom: 16px;
@@ -816,20 +794,6 @@
             box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
         }
         
-        /* ===== LOADING ===== */
-        .loading-shimmer {
-            background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: var(--radius);
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        /* ===== SCROLLBAR ===== */
         .main-content::-webkit-scrollbar {
             width: 4px;
         }
@@ -843,7 +807,6 @@
             border-radius: 10px;
         }
         
-        /* ===== RESPONSIVE ===== */
         @media (min-width: 640px) {
             .stats-grid { gap: 12px; }
             .stat-card .stat-number { font-size: 30px; }
@@ -855,7 +818,6 @@
             .app-header h1 { font-size: 17px; }
         }
         
-        /* ===== SPINNER ===== */
         .spinner {
             display: inline-block;
             width: 20px;
@@ -870,7 +832,6 @@
             to { transform: rotate(360deg); }
         }
         
-        /* ===== UTILITY ===== */
         .hidden { display: none !important; }
         .text-center { text-align: center; }
         .mt-2 { margin-top: 8px; }
@@ -884,26 +845,19 @@
 <body>
     
 <div id="app">
-    <!-- ===== HEADER ===== -->
     <header class="app-header">
         <h1><i class="fas fa-boxes"></i> Replenish Pro</h1>
         <div class="header-actions">
             <span class="offline-badge" id="offlineBadge"><i class="fas fa-wifi-slash"></i> Offline</span>
-            <button onclick="syncData()" title="Sync" id="syncBtn">
-                <i class="fas fa-cloud-upload-alt"></i>
-            </button>
             <button onclick="refreshData()" title="Refresh" id="refreshBtn">
                 <i class="fas fa-sync"></i>
             </button>
         </div>
     </header>
     
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="main-content" id="mainContent">
         
-        <!-- ===== VIEW: DASHBOARD ===== -->
         <div class="view active" id="viewDashboard">
-            <!-- Stats -->
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card">
                     <div class="stat-number" id="statTotal">0</div>
@@ -919,7 +873,6 @@
                 </div>
             </div>
             
-            <!-- Quick Actions -->
             <div class="quick-actions">
                 <button onclick="openForm()">
                     <i class="fas fa-plus-circle"></i> Tambah Manual
@@ -929,7 +882,6 @@
                 </button>
             </div>
             
-            <!-- Recent Items -->
             <div class="section-title">
                 <span>🔄 Perlu Replenish</span>
                 <span class="badge" id="recentBadge">0</span>
@@ -943,7 +895,6 @@
             </div>
         </div>
         
-        <!-- ===== VIEW: REPLENISH LIST ===== -->
         <div class="view" id="viewReplenish">
             <div class="search-bar">
                 <i class="fas fa-search"></i>
@@ -966,7 +917,6 @@
             </div>
         </div>
         
-        <!-- ===== VIEW: HISTORY ===== -->
         <div class="view" id="viewHistory">
             <div class="section-title">
                 <span>📊 Riwayat</span>
@@ -981,7 +931,6 @@
         </div>
     </main>
     
-    <!-- ===== BOTTOM NAV ===== -->
     <nav class="bottom-nav">
         <button class="active" data-view="dashboard" onclick="switchView('dashboard')">
             <i class="fas fa-home"></i>
@@ -1029,7 +978,7 @@
             
             <div class="form-group">
                 <label for="itemSku">SKU</label>
-                <input type="text" id="itemSku" placeholder="SKU akan otomatis terisi" readonly style="background:var(--gray-50);">
+                <input type="text" id="itemSku" placeholder="SKU akan otomatis terisi" readonly>
             </div>
             
             <div class="form-group">
@@ -1097,7 +1046,7 @@
 
 const API_CONFIG = {
     BASE_URL: 'https://script.google.com/macros/s/AKfycbxPUm9E0WlM1ssBXPAL3HIBmF7dYDtiFB-rW74T19Nz6fHmU7m5zVOzxCSv1JRD41Qi/exec',
-    API_KEY: 'R3pl3n1sh2024' // Ganti dengan API Key yang Anda set di Apps Script
+    API_KEY: 'R3pl3n1sh2024'
 };
 
 // ============================================================
@@ -1120,39 +1069,24 @@ let scannerBarcodeDetector = null;
 // ============================================================
 
 async function apiCall(endpoint, options = {}) {
-    const url = `${API_CONFIG.BASE_URL}?path=${endpoint}`;
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-API-Key': API_CONFIG.API_KEY
-    };
+    const url = `${API_CONFIG.BASE_URL}?path=${endpoint}&apiKey=${API_CONFIG.API_KEY}`;
     
     const config = {
         ...options,
         headers: {
-            ...headers,
-            ...options.headers
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
         }
     };
     
-    try {
-        const response = await fetch(url, config);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.message || 'Unknown error');
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+    const response = await fetch(url, config);
+    const data = await response.json();
+    
+    if (!data.success) {
+        throw new Error(data.message || 'Unknown error');
     }
+    
+    return data;
 }
 
 // ============================================================
@@ -1163,8 +1097,7 @@ async function lookupProductByBarcode(barcode) {
     if (!barcode) return null;
     
     try {
-        const result = await apiCall(`products?barcode=${encodeURIComponent(barcode)}`);
-        
+        const result = await apiCall(`products&barcode=${encodeURIComponent(barcode)}`);
         if (result.data && result.data.length > 0) {
             return result.data[0];
         }
@@ -1175,31 +1108,13 @@ async function lookupProductByBarcode(barcode) {
     }
 }
 
-async function searchProducts(query) {
-    if (!query || query.length < 2) return [];
-    
-    try {
-        const result = await apiCall(`products?search=${encodeURIComponent(query)}&limit=20`);
-        return result.data || [];
-    } catch (error) {
-        console.error('Search error:', error);
-        return [];
-    }
-}
-
 // ============================================================
 //  REPLENISH CRUD
 // ============================================================
 
 async function loadReplenish() {
-    try {
-        const result = await apiCall('replenish?limit=100');
-        return result.data || [];
-    } catch (error) {
-        console.error('Load error:', error);
-        showToast('❌ Gagal memuat data: ' + error.message, 'error');
-        return [];
-    }
+    const result = await apiCall('replenish&limit=100');
+    return result.data || [];
 }
 
 async function createReplenish(data) {
@@ -1211,7 +1126,7 @@ async function createReplenish(data) {
 }
 
 async function updateReplenish(id, data) {
-    const result = await apiCall(`replenish?id=${id}`, {
+    const result = await apiCall(`replenish&id=${id}`, {
         method: 'PUT',
         body: JSON.stringify(data)
     });
@@ -1219,7 +1134,7 @@ async function updateReplenish(id, data) {
 }
 
 async function deleteReplenish(id) {
-    const result = await apiCall(`replenish?id=${id}`, {
+    const result = await apiCall(`replenish&id=${id}`, {
         method: 'DELETE'
     });
     return result;
@@ -1238,25 +1153,10 @@ async function refreshData() {
         renderAll();
         showToast('✅ Data berhasil dimuat', 'success');
     } catch (error) {
-        showToast('❌ Gagal memuat data', 'error');
+        showToast('❌ Gagal memuat data: ' + error.message, 'error');
     }
     
     btn.innerHTML = '<i class="fas fa-sync"></i>';
-}
-
-async function syncData() {
-    const btn = document.getElementById('syncBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    try {
-        items = await loadReplenish();
-        renderAll();
-        showToast('✅ Sinkronisasi berhasil', 'success');
-    } catch (error) {
-        showToast('❌ Gagal sinkronisasi: ' + error.message, 'error');
-    }
-    
-    btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
 }
 
 // ============================================================
@@ -1438,7 +1338,6 @@ function switchView(view) {
 function openForm(item) {
     const modal = document.getElementById('modalForm');
     const title = document.getElementById('modalTitle');
-    const form = document.getElementById('itemForm');
     
     // Set tanggal default (besok)
     const tomorrow = new Date();
@@ -1446,7 +1345,6 @@ function openForm(item) {
     document.getElementById('itemTanggal').value = tomorrow.toISOString().split('T')[0];
     
     if (item) {
-        // Edit mode
         editId = item.ID || item.id;
         document.getElementById('editId').value = editId;
         document.getElementById('itemBarcode').value = item.Barcode || item.barcode || '';
@@ -1459,7 +1357,6 @@ function openForm(item) {
         title.innerHTML = '<i class="fas fa-edit"></i> Edit Replenish';
         document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update';
     } else {
-        // Add mode
         editId = null;
         document.getElementById('editId').value = '';
         document.getElementById('itemBarcode').value = '';
@@ -1527,7 +1424,6 @@ async function saveItem(e) {
             showToast('✅ Data berhasil diupdate', 'success');
         } else {
             const result = await createReplenish(data);
-            // Add to history
             history.unshift({
                 action: 'Tambah',
                 itemName: name,
@@ -1613,12 +1509,10 @@ async function checkBarcode() {
     const skuField = document.getElementById('itemSku');
     const nameField = document.getElementById('itemName');
     
-    // Reset
     foundDiv.classList.remove('show');
     
     if (barcode.length < 5) return;
     
-    // Debounce
     clearTimeout(lookupTimeout);
     lookupTimeout = setTimeout(async () => {
         try {
@@ -1742,7 +1636,6 @@ function stopScanner(barcodeValue) {
     if (barcodeValue) {
         document.getElementById('itemBarcode').value = barcodeValue;
         checkBarcode();
-        // Auto focus ke field qty setelah scan
         setTimeout(() => document.getElementById('itemQty').focus(), 300);
     }
 }
@@ -1850,16 +1743,14 @@ window.editItem = editItem;
 window.deleteItem = deleteItem;
 window.toggleStatus = toggleStatus;
 window.refreshData = refreshData;
-window.syncData = syncData;
 window.filterItems = filterItems;
 window.startScanner = startScanner;
 window.stopScanner = stopScanner;
 window.toggleFlashlight = toggleFlashlight;
 window.checkBarcode = checkBarcode;
 
-console.log('🚀 Replenish Tracker Pro siap!');
+console.log('🚀 Replenish Requests Gro siap!');
 console.log('📦 ' + items.length + ' items loaded');
 </script>
-
 </body>
 </html>
