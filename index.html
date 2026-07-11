@@ -27,9 +27,6 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
-    <!-- Google ML Kit Barcode Scanner (via CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@google/ml-kit-barcode-scanning@1.0.0/dist/ml-kit-barcode-scanning.min.js"></script>
-    
     <style>
         /* ===== RESET & BASE ===== */
         * {
@@ -281,7 +278,7 @@
             border-radius: 20px;
         }
         
-        /* ===== PRODUCT / ITEM LIST ===== */
+        /* ===== ITEM LIST ===== */
         .item-list {
             display: flex;
             flex-direction: column;
@@ -298,7 +295,6 @@
             align-items: center;
             justify-content: space-between;
             transition: all 0.2s;
-            cursor: pointer;
         }
         
         .item-card:active {
@@ -333,6 +329,18 @@
             margin-top: 2px;
         }
         
+        .item-info .sku-badge {
+            display: inline-block;
+            font-size: 10px;
+            background: var(--primary-light);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-family: monospace;
+            margin-top: 2px;
+            margin-right: 4px;
+        }
+        
         .item-status {
             padding: 4px 12px;
             border-radius: 20px;
@@ -353,11 +361,6 @@
             color: var(--success);
         }
         
-        .item-status.urgent {
-            background: var(--danger-light);
-            color: var(--danger);
-        }
-        
         /* ===== FORM ===== */
         .form-group {
             margin-bottom: 16px;
@@ -369,6 +372,10 @@
             font-weight: 600;
             color: var(--gray-700);
             margin-bottom: 4px;
+        }
+        
+        .form-group label .required {
+            color: var(--danger);
         }
         
         .form-group .input-with-scan {
@@ -391,6 +398,7 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
+            min-width: 48px;
         }
         
         .form-group .input-with-scan button:active {
@@ -422,7 +430,36 @@
         
         .form-group textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 60px;
+        }
+        
+        .form-group .product-found {
+            background: var(--success-light);
+            border: 2px solid var(--success);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .form-group .product-found.show {
+            display: flex;
+        }
+        
+        .form-group .product-found i {
+            color: var(--success);
+            font-size: 20px;
+        }
+        
+        .form-group .product-found .found-info {
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+        
+        .form-group .product-found .found-info strong {
+            color: var(--primary);
         }
         
         .btn {
@@ -468,6 +505,11 @@
             background: white;
             color: var(--gray-700);
             border: 2px solid var(--gray-200);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         /* ===== EMPTY STATE ===== */
@@ -602,7 +644,7 @@
             border-radius: var(--radius) var(--radius) 0 0;
             max-width: 480px;
             width: 100%;
-            max-height: 85vh;
+            max-height: 90vh;
             padding: 20px 20px calc(20px + var(--safe-bottom));
             animation: slideUp 0.3s ease;
             overflow-y: auto;
@@ -774,39 +816,17 @@
             box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
         }
         
-        /* ===== SYNC STATUS ===== */
-        .sync-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--gray-500);
-            padding: 8px 12px;
-            background: var(--gray-100);
+        /* ===== LOADING ===== */
+        .loading-shimmer {
+            background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
             border-radius: var(--radius);
-            margin-bottom: 12px;
         }
         
-        .sync-status .sync-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            display: inline-block;
-        }
-        
-        .sync-status .sync-dot.syncing {
-            background: var(--warning);
-            animation: pulse 1s infinite;
-        }
-        
-        .sync-status .sync-dot.error {
-            background: var(--danger);
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
         
         /* ===== SCROLLBAR ===== */
@@ -835,7 +855,7 @@
             .app-header h1 { font-size: 17px; }
         }
         
-        /* ===== LOADING SPINNER ===== */
+        /* ===== SPINNER ===== */
         .spinner {
             display: inline-block;
             width: 20px;
@@ -869,7 +889,7 @@
         <h1><i class="fas fa-boxes"></i> Replenish Pro</h1>
         <div class="header-actions">
             <span class="offline-badge" id="offlineBadge"><i class="fas fa-wifi-slash"></i> Offline</span>
-            <button onclick="syncToSpreadsheet()" title="Sync ke Spreadsheet" id="syncBtn">
+            <button onclick="syncData()" title="Sync" id="syncBtn">
                 <i class="fas fa-cloud-upload-alt"></i>
             </button>
             <button onclick="refreshData()" title="Refresh" id="refreshBtn">
@@ -883,12 +903,6 @@
         
         <!-- ===== VIEW: DASHBOARD ===== -->
         <div class="view active" id="viewDashboard">
-            <!-- Sync Status -->
-            <div class="sync-status" id="syncStatus">
-                <span class="sync-dot" id="syncDot"></span>
-                <span id="syncText">Online - Siap sync</span>
-            </div>
-            
             <!-- Stats -->
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card">
@@ -933,7 +947,7 @@
         <div class="view" id="viewReplenish">
             <div class="search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Cari barang atau barcode..." oninput="filterItems()">
+                <input type="text" id="searchInput" placeholder="Cari SKU, nama atau barcode..." oninput="filterItems()">
             </div>
             
             <div class="section-title">
@@ -956,9 +970,6 @@
         <div class="view" id="viewHistory">
             <div class="section-title">
                 <span>📊 Riwayat</span>
-                <button onclick="clearHistory()" style="background:none;border:none;color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-trash"></i> Hapus
-                </button>
             </div>
             <div class="item-list" id="historyList">
                 <div class="empty-state">
@@ -991,7 +1002,7 @@
 <div class="modal-overlay" id="modalForm">
     <div class="modal">
         <div class="modal-header">
-            <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Tambah Barang</h2>
+            <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Tambah Replenish</h2>
             <button class="modal-close" onclick="closeForm()">&times;</button>
         </div>
         
@@ -999,43 +1010,59 @@
             <input type="hidden" id="editId">
             
             <div class="form-group">
-                <label for="itemBarcode">Barcode</label>
+                <label for="itemBarcode">Barcode <span style="color:var(--gray-400);font-weight:400;">(scan atau ketik)</span></label>
                 <div class="input-with-scan">
-                    <input type="text" id="itemBarcode" placeholder="Scan atau masukkan barcode">
+                    <input type="text" id="itemBarcode" placeholder="Scan atau masukkan barcode" oninput="checkBarcode()">
                     <button type="button" onclick="startScanner()">
                         <i class="fas fa-camera"></i>
                     </button>
                 </div>
+                <div class="product-found" id="productFound">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="found-info">
+                        Produk ditemukan di Master Database
+                        <br>
+                        <strong id="foundSku">SKU: -</strong>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
-                <label for="itemName">Nama Barang *</label>
-                <input type="text" id="itemName" placeholder="Contoh: Indomie Goreng" required>
+                <label for="itemSku">SKU</label>
+                <input type="text" id="itemSku" placeholder="SKU akan otomatis terisi" readonly style="background:var(--gray-50);">
             </div>
             
             <div class="form-group">
-                <label for="itemQuantity">Jumlah Dibutuhkan *</label>
-                <input type="number" id="itemQuantity" placeholder="Contoh: 10" min="1" required>
+                <label for="itemName">Nama Barang <span class="required">*</span></label>
+                <input type="text" id="itemName" placeholder="Nama barang" required>
             </div>
             
             <div class="form-group">
-                <label for="itemCategory">Kategori</label>
-                <select id="itemCategory">
-                    <option value="Makanan">Makanan</option>
-                    <option value="Minuman">Minuman</option>
-                    <option value="Snack">Snack</option>
-                    <option value="Frozen">Frozen</option>
-                    <option value="Fresh">Fresh</option>
-                    <option value="Lainnya">Lainnya</option>
-                </select>
+                <label for="itemQty">Jumlah (Qty) <span class="required">*</span></label>
+                <input type="number" id="itemQty" placeholder="Contoh: 10" min="1" required>
             </div>
             
             <div class="form-group">
-                <label for="itemNote">Catatan (opsional)</label>
-                <textarea id="itemNote" placeholder="Contoh: Rak bagian bawah kosong"></textarea>
+                <label for="itemLokasi">Lokasi <span class="required">*</span></label>
+                <input type="text" id="itemLokasi" placeholder="Contoh: Rak A-1, Gudang 2" required>
             </div>
             
-            <button type="submit" class="btn btn-primary">
+            <div class="form-group">
+                <label for="itemPic">PIC (Penanggung Jawab)</label>
+                <input type="text" id="itemPic" placeholder="Nama staff yang meminta">
+            </div>
+            
+            <div class="form-group">
+                <label for="itemTanggal">Tanggal Diminta</label>
+                <input type="date" id="itemTanggal">
+            </div>
+            
+            <div class="form-group">
+                <label for="itemCatatan">Catatan (opsional)</label>
+                <textarea id="itemCatatan" placeholder="Catatan tambahan"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="submitBtn">
                 <i class="fas fa-save"></i> Simpan
             </button>
         </form>
@@ -1065,26 +1092,23 @@
 
 <script>
 // ============================================================
-//  DATA LAYER
+//  KONFIGURASI API
 // ============================================================
 
-const STORAGE_KEY = 'replenish_data';
-const HISTORY_KEY = 'replenish_history';
-const SYNC_KEY = 'replenish_sync_queue';
+const API_CONFIG = {
+    BASE_URL: 'https://script.google.com/macros/s/AKfycbxPUm9E0WlM1ssBXPAL3HIBmF7dYDtiFB-rW74T19Nz6fHmU7m5zVOzxCSv1JRD41Qi/exec',
+    API_KEY: 'R3pl3n1sh2024' // Ganti dengan API Key yang Anda set di Apps Script
+};
 
-// Default data untuk demo
-const defaultData = [
-    { id: '1', barcode: '8991234567890', name: 'Indomie Goreng', quantity: 20, category: 'Makanan', note: 'Rak hampir kosong', status: 'pending', createdAt: Date.now() - 3600000 },
-    { id: '2', barcode: '8999876543210', name: 'Coca Cola 500ml', quantity: 15, category: 'Minuman', note: 'Stok menipis', status: 'pending', createdAt: Date.now() - 7200000 },
-    { id: '3', barcode: '', name: 'Pocky Stick', quantity: 8, category: 'Snack', note: '', status: 'done', createdAt: Date.now() - 86400000 },
-];
+// ============================================================
+//  STATE
+// ============================================================
 
-// State
 let items = [];
 let history = [];
-let syncQueue = [];
 let currentView = 'dashboard';
 let editId = null;
+let isSubmitting = false;
 
 // Scanner state
 let scannerActive = false;
@@ -1092,432 +1116,147 @@ let scannerStream = null;
 let scannerBarcodeDetector = null;
 
 // ============================================================
-//  INIT
+//  API CALLS
 // ============================================================
 
-function init() {
-    loadData();
-    renderAll();
-    setupServiceWorker();
-    setupOfflineListener();
-    updateSyncStatus();
-    checkBarcodeSupport();
+async function apiCall(endpoint, options = {}) {
+    const url = `${API_CONFIG.BASE_URL}?path=${endpoint}`;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_CONFIG.API_KEY
+    };
+    
+    const config = {
+        ...options,
+        headers: {
+            ...headers,
+            ...options.headers
+        }
+    };
+    
+    try {
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Unknown error');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+//  MASTER DATABASE (Lookup dari Google Spreadsheet)
+// ============================================================
+
+async function lookupProductByBarcode(barcode) {
+    if (!barcode) return null;
+    
+    try {
+        const result = await apiCall(`products?barcode=${encodeURIComponent(barcode)}`);
+        
+        if (result.data && result.data.length > 0) {
+            return result.data[0];
+        }
+        return null;
+    } catch (error) {
+        console.error('Lookup error:', error);
+        return null;
+    }
+}
+
+async function searchProducts(query) {
+    if (!query || query.length < 2) return [];
+    
+    try {
+        const result = await apiCall(`products?search=${encodeURIComponent(query)}&limit=20`);
+        return result.data || [];
+    } catch (error) {
+        console.error('Search error:', error);
+        return [];
+    }
+}
+
+// ============================================================
+//  REPLENISH CRUD
+// ============================================================
+
+async function loadReplenish() {
+    try {
+        const result = await apiCall('replenish?limit=100');
+        return result.data || [];
+    } catch (error) {
+        console.error('Load error:', error);
+        showToast('❌ Gagal memuat data: ' + error.message, 'error');
+        return [];
+    }
+}
+
+async function createReplenish(data) {
+    const result = await apiCall('replenish', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+    return result;
+}
+
+async function updateReplenish(id, data) {
+    const result = await apiCall(`replenish?id=${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    });
+    return result;
+}
+
+async function deleteReplenish(id) {
+    const result = await apiCall(`replenish?id=${id}`, {
+        method: 'DELETE'
+    });
+    return result;
 }
 
 // ============================================================
 //  DATA MANAGEMENT
 // ============================================================
 
-function loadData() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const storedHistory = localStorage.getItem(HISTORY_KEY);
-    const storedSync = localStorage.getItem(SYNC_KEY);
-    
-    items = stored ? JSON.parse(stored) : defaultData;
-    history = storedHistory ? JSON.parse(storedHistory) : [];
-    syncQueue = storedSync ? JSON.parse(storedSync) : [];
-    
-    if (!stored) saveData();
-}
-
-function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-    localStorage.setItem(SYNC_KEY, JSON.stringify(syncQueue));
-}
-
-function addHistory(action, item) {
-    history.unshift({
-        id: Date.now().toString(),
-        action: action,
-        itemName: item.name,
-        quantity: item.quantity,
-        barcode: item.barcode || '-',
-        timestamp: Date.now()
-    });
-    
-    if (history.length > 100) history = history.slice(0, 100);
-    saveData();
-}
-
-// ============================================================
-//  CRUD OPERATIONS
-// ============================================================
-
-function addItem(name, quantity, category, note, barcode) {
-    const newItem = {
-        id: Date.now().toString(),
-        barcode: barcode || '',
-        name: name.trim(),
-        quantity: parseInt(quantity),
-        category: category || 'Lainnya',
-        note: note || '',
-        status: 'pending',
-        createdAt: Date.now()
-    };
-    
-    items.unshift(newItem);
-    saveData();
-    addHistory('Tambah', newItem);
-    
-    // Queue for sync
-    syncQueue.push({ action: 'add', item: newItem });
-    saveData();
-    
-    renderAll();
-    showToast('✅ Barang berhasil ditambahkan', 'success');
-    autoSync();
-}
-
-function updateItem(id, name, quantity, category, note, barcode) {
-    const index = items.findIndex(item => item.id === id);
-    if (index === -1) return;
-    
-    const oldItem = { ...items[index] };
-    items[index] = {
-        ...items[index],
-        barcode: barcode || items[index].barcode || '',
-        name: name.trim(),
-        quantity: parseInt(quantity),
-        category: category || 'Lainnya',
-        note: note || ''
-    };
-    
-    saveData();
-    addHistory('Update', items[index]);
-    
-    // Queue for sync
-    syncQueue.push({ action: 'update', item: items[index] });
-    saveData();
-    
-    renderAll();
-    showToast('✅ Barang berhasil diperbarui', 'success');
-    autoSync();
-}
-
-function deleteItem(id) {
-    if (!confirm('Yakin ingin menghapus item ini?')) return;
-    
-    const item = items.find(i => i.id === id);
-    items = items.filter(i => i.id !== id);
-    saveData();
-    if (item) {
-        addHistory('Hapus', item);
-        syncQueue.push({ action: 'delete', item: item });
-        saveData();
-    }
-    renderAll();
-    showToast('🗑️ Barang dihapus', 'warning');
-    autoSync();
-}
-
-function toggleStatus(id) {
-    const item = items.find(i => i.id === id);
-    if (!item) return;
-    
-    item.status = item.status === 'pending' ? 'done' : 'pending';
-    saveData();
-    addHistory(item.status === 'done' ? 'Selesai' : 'Batal Selesai', item);
-    
-    syncQueue.push({ action: 'update', item: item });
-    saveData();
-    
-    renderAll();
-    const msg = item.status === 'done' ? '✅ Tandai selesai' : '↩️ Batal selesai';
-    showToast(msg, 'success');
-    autoSync();
-}
-
-// ============================================================
-//  GOOGLE SPREADSHEET SYNC
-// ============================================================
-
-const SPREADSHEET_API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-const API_KEY = 'YOUR_API_KEY';
-
-function updateSyncStatus(message, status = 'online') {
-    const dot = document.getElementById('syncDot');
-    const text = document.getElementById('syncText');
-    
-    dot.className = 'sync-dot';
-    if (status === 'syncing') {
-        dot.classList.add('syncing');
-        text.textContent = message || 'Menyinkronkan...';
-    } else if (status === 'error') {
-        dot.classList.add('error');
-        text.textContent = message || 'Gagal sync';
-    } else if (status === 'offline') {
-        dot.style.display = 'none';
-        text.textContent = '📡 Offline - Data disimpan lokal';
-    } else {
-        dot.style.display = 'inline-block';
-        text.textContent = message || 'Online - Siap sync';
-    }
-}
-
-async function syncToSpreadsheet() {
-    if (!navigator.onLine) {
-        showToast('📡 Tidak ada koneksi internet', 'warning');
-        updateSyncStatus('Offline - Tunggu koneksi', 'offline');
-        return;
-    }
-    
-    if (syncQueue.length === 0) {
-        showToast('✅ Semua data sudah sinkron', 'success');
-        return;
-    }
-    
-    updateSyncStatus(`Menyinkronkan ${syncQueue.length} item...`, 'syncing');
+async function refreshData() {
+    const btn = document.getElementById('refreshBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     try {
-        // Siapkan payload
-        const payload = {
-            apiKey: API_KEY,
-            action: 'batch_sync',
-            data: syncQueue,
-            timestamp: Date.now()
-        };
-        
-        // Kirim ke Google Apps Script
-        const response = await fetch(SPREADSHEET_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!response.ok) throw new Error('Sync gagal: ' + response.status);
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            syncQueue = [];
-            saveData();
-            showToast(`✅ ${result.synced || syncQueue.length} data tersinkron`, 'success');
-            updateSyncStatus('Tersinkron dengan Spreadsheet', 'online');
-        } else {
-            throw new Error(result.message || 'Gagal sync');
-        }
-        
+        items = await loadReplenish();
+        renderAll();
+        showToast('✅ Data berhasil dimuat', 'success');
     } catch (error) {
-        console.error('Sync error:', error);
-        showToast('⚠️ Gagal sync: ' + error.message, 'error');
-        updateSyncStatus('Gagal sync - Coba lagi', 'error');
-    }
-}
-
-async function autoSync() {
-    if (syncQueue.length > 0 && navigator.onLine) {
-        // Auto sync after 3 seconds idle
-        clearTimeout(window.autoSyncTimer);
-        window.autoSyncTimer = setTimeout(() => {
-            syncToSpreadsheet();
-        }, 3000);
-    }
-}
-
-// ============================================================
-//  BARCODE SCANNER (Google ML Kit)
-// ============================================================
-
-async function checkBarcodeSupport() {
-    if ('BarcodeDetector' in window) {
-        console.log('✅ Barcode Detector supported');
-    } else {
-        console.warn('⚠️ Barcode Detector not supported, using fallback');
-    }
-}
-
-async function startScanner() {
-    const overlay = document.getElementById('scannerOverlay');
-    const video = document.getElementById('scannerVideo');
-    const status = document.getElementById('scannerStatus');
-    
-    // Cek dukungan kamera
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('❌ Kamera tidak didukung di browser ini', 'error');
-        return;
+        showToast('❌ Gagal memuat data', 'error');
     }
     
-    // Cek support BarcodeDetector
-    const isSupported = 'BarcodeDetector' in window;
-    
-    if (!isSupported) {
-        status.textContent = '⚠️ Browser tidak mendukung scan barcode. Masukkan manual.';
-        showToast('⚠️ Scan barcode tidak didukung, gunakan input manual', 'warning');
-        // Tampilkan tetap tapi dengan info
-    }
+    btn.innerHTML = '<i class="fas fa-sync"></i>';
+}
+
+async function syncData() {
+    const btn = document.getElementById('syncBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
     try {
-        // Start camera
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        
-        video.srcObject = stream;
-        scannerStream = stream;
-        await video.play();
-        
-        overlay.classList.add('show');
-        scannerActive = true;
-        status.textContent = '📷 Arahkan kamera ke barcode...';
-        
-        // Setup barcode detector if supported
-        if (isSupported) {
-            scannerBarcodeDetector = new BarcodeDetector({
-                formats: [
-                    'aztec', 'code_128', 'code_39', 'code_93', 'codabar',
-                    'data_matrix', 'ean_13', 'ean_8', 'itf', 'pdf417',
-                    'qr_code', 'upc_a', 'upc_e'
-                ]
-            });
-            
-            // Start scanning loop
-            scanLoop();
-        } else {
-            // Fallback: manual input only
-            status.textContent = 'ℹ️ Scan otomatis tidak tersedia. Masukkan barcode manual.';
-        }
-        
+        items = await loadReplenish();
+        renderAll();
+        showToast('✅ Sinkronisasi berhasil', 'success');
     } catch (error) {
-        console.error('Camera error:', error);
-        showToast('❌ Gagal akses kamera: ' + error.message, 'error');
-        status.textContent = '❌ Gagal akses kamera';
-    }
-}
-
-async function scanLoop() {
-    if (!scannerActive) return;
-    
-    const video = document.getElementById('scannerVideo');
-    const status = document.getElementById('scannerStatus');
-    
-    if (!scannerBarcodeDetector || !video || video.readyState < 2) {
-        setTimeout(scanLoop, 100);
-        return;
+        showToast('❌ Gagal sinkronisasi: ' + error.message, 'error');
     }
     
-    try {
-        const barcodes = await scannerBarcodeDetector.detect(video);
-        
-        if (barcodes.length > 0) {
-            const barcode = barcodes[0];
-            const rawValue = barcode.rawValue;
-            
-            // Vibrate on detection
-            if (navigator.vibrate) navigator.vibrate(100);
-            
-            // Success!
-            status.textContent = `✅ Barcode terdeteksi: ${rawValue}`;
-            status.style.background = 'rgba(5, 150, 105, 0.8)';
-            
-            // Stop scanner after 1.5s
-            setTimeout(() => {
-                stopScanner(rawValue);
-            }, 1500);
-            
-            return;
-        }
-        
-        // Continue scanning
-        requestAnimationFrame(scanLoop);
-        
-    } catch (error) {
-        console.error('Scan error:', error);
-        setTimeout(scanLoop, 100);
-    }
-}
-
-function stopScanner(barcodeValue) {
-    scannerActive = false;
-    
-    // Stop video stream
-    if (scannerStream) {
-        scannerStream.getTracks().forEach(track => track.stop());
-        scannerStream = null;
-    }
-    
-    // Clear video
-    const video = document.getElementById('scannerVideo');
-    video.srcObject = null;
-    video.load();
-    
-    // Hide overlay
-    document.getElementById('scannerOverlay').classList.remove('show');
-    
-    // Reset status
-    const status = document.getElementById('scannerStatus');
-    status.textContent = '📷 Mengarahkan kamera ke barcode...';
-    status.style.background = '';
-    
-    // Fill barcode if found
-    if (barcodeValue) {
-        document.getElementById('itemBarcode').value = barcodeValue;
-        // Auto lookup product by barcode (optional)
-        lookupProductByBarcode(barcodeValue);
-    }
-}
-
-function toggleFlashlight() {
-    // Not all browsers support torch
-    if (!scannerStream) return;
-    
-    const track = scannerStream.getVideoTracks()[0];
-    if (!track) return;
-    
-    try {
-        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-        if (capabilities.torch) {
-            track.applyConstraints({
-                advanced: [{ torch: !track.getSettings().torch }]
-            });
-            showToast('💡 Lampu ' + (track.getSettings().torch ? 'mati' : 'menyala'), 'info');
-        } else {
-            showToast('ℹ️ Lampu kilat tidak tersedia', 'warning');
-        }
-    } catch (e) {
-        console.warn('Flashlight error:', e);
-    }
-}
-
-// ============================================================
-//  BARCODE PRODUCT LOOKUP
-// ============================================================
-
-async function lookupProductByBarcode(barcode) {
-    if (!barcode) return;
-    
-    // Check if product already exists in local data
-    const existing = items.find(item => item.barcode === barcode);
-    if (existing) {
-        showToast(`🔍 Ditemukan: ${existing.name} (${existing.quantity} unit)`, 'info');
-        // Auto fill form
-        document.getElementById('itemName').value = existing.name;
-        document.getElementById('itemCategory').value = existing.category;
-        return;
-    }
-    
-    // Try to lookup from online database (Open Food Facts)
-    try {
-        if (navigator.onLine) {
-            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-            const data = await response.json();
-            
-            if (data.status === 1 && data.product) {
-                const product = data.product;
-                const name = product.product_name || product.brands || 'Produk Ditemukan';
-                const category = product.categories ? product.categories.split(',')[0].trim() : 'Lainnya';
-                
-                document.getElementById('itemName').value = name;
-                document.getElementById('itemCategory').value = category;
-                showToast(`🔍 Ditemukan: ${name}`, 'success');
-            }
-        }
-    } catch (e) {
-        // Silent fail, just use barcode
-        console.log('Product lookup error:', e);
-    }
+    btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
 }
 
 // ============================================================
@@ -1534,8 +1273,8 @@ function renderAll() {
 
 function renderStats() {
     const total = items.length;
-    const pending = items.filter(i => i.status === 'pending').length;
-    const done = items.filter(i => i.status === 'done').length;
+    const pending = items.filter(i => i.Status === 'pending').length;
+    const done = items.filter(i => i.Status === 'done').length;
     
     document.getElementById('statTotal').textContent = total;
     document.getElementById('statPending').textContent = pending;
@@ -1544,14 +1283,14 @@ function renderStats() {
 
 function renderRecent() {
     const container = document.getElementById('recentList');
-    const recent = items.slice(0, 5);
+    const recent = items.filter(i => i.Status === 'pending').slice(0, 5);
     
     if (recent.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-inbox"></i>
-                <h3>Belum ada data</h3>
-                <p>Tambahkan barang yang perlu direplenish</p>
+                <h3>Tidak ada pending</h3>
+                <p>Semua barang sudah direplenish</p>
             </div>
         `;
         return;
@@ -1567,9 +1306,9 @@ function renderAllItems() {
     let filtered = items;
     if (search) {
         filtered = items.filter(i => 
-            i.name.toLowerCase().includes(search) ||
-            i.category.toLowerCase().includes(search) ||
-            (i.barcode && i.barcode.includes(search))
+            (i['Nama Barang'] || '').toLowerCase().includes(search) ||
+            (i.SKU || '').toLowerCase().includes(search) ||
+            (i.Barcode || '').includes(search)
         );
     }
     
@@ -1605,7 +1344,7 @@ function renderHistory() {
         <div class="item-card" style="cursor:default;">
             <div class="item-info">
                 <div class="name">${h.action}: ${h.itemName}</div>
-                <div class="detail">${h.quantity} unit ${h.barcode !== '-' ? '• Barcode: ' + h.barcode : ''} • ${formatTime(h.timestamp)}</div>
+                <div class="detail">${h.qty} unit • ${formatTime(h.timestamp)}</div>
             </div>
             <span style="font-size:11px;color:var(--gray-400);">${h.action === 'Tambah' ? '➕' : h.action === 'Hapus' ? '🗑️' : h.action === 'Selesai' ? '✅' : '✏️'}</span>
         </div>
@@ -1613,38 +1352,35 @@ function renderHistory() {
 }
 
 function createItemCard(item) {
-    const statusMap = {
-        pending: 'pending',
-        done: 'done'
-    };
+    const status = item.Status || 'pending';
+    const statusLabel = status === 'pending' ? '⏳ Pending' : '✅ Selesai';
+    const statusClass = status === 'pending' ? 'pending' : 'done';
+    const isPending = status === 'pending';
     
-    const statusLabel = {
-        pending: '⏳ Pending',
-        done: '✅ Selesai'
-    };
-    
-    const statusClass = statusMap[item.status] || 'pending';
-    const isPending = item.status === 'pending';
+    const name = item['Nama Barang'] || item.name || 'Tidak ada nama';
+    const sku = item.SKU || item.sku || '';
+    const barcode = item.Barcode || item.barcode || '';
+    const qty = item.Qty || item.qty || 0;
     
     return `
         <div class="item-card">
             <div class="item-info">
-                <div class="name">${escapeHtml(item.name)}</div>
+                <div class="name">${escapeHtml(name)}</div>
                 <div class="detail">
-                    ${item.quantity} unit • ${item.category}
-                    ${item.barcode ? `• <span class="barcode-badge"><i class="fas fa-barcode"></i> ${item.barcode}</span>` : ''}
-                    ${item.note ? '• ' + escapeHtml(item.note) : ''}
+                    ${qty} unit
+                    ${sku ? `• <span class="sku-badge">SKU: ${sku}</span>` : ''}
+                    ${barcode ? `• <span class="barcode-badge"><i class="fas fa-barcode"></i> ${barcode}</span>` : ''}
                 </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                <span class="item-status ${statusClass}">${statusLabel[item.status]}</span>
-                <button onclick="toggleStatus('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="${isPending ? 'Tandai selesai' : 'Batal selesai'}">
+                <span class="item-status ${statusClass}">${statusLabel}</span>
+                <button onclick="toggleStatus('${item.ID || item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="${isPending ? 'Tandai selesai' : 'Batal selesai'}">
                     ${isPending ? '✅' : '↩️'}
                 </button>
-                <button onclick="editItem('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Edit">
+                <button onclick="editItem('${item.ID || item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Edit">
                     ✏️
                 </button>
-                <button onclick="deleteItem('${item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Hapus">
+                <button onclick="deleteItem('${item.ID || item.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;" title="Hapus">
                     🗑️
                 </button>
             </div>
@@ -1653,8 +1389,27 @@ function createItemCard(item) {
 }
 
 function updateBadges() {
-    const pending = items.filter(i => i.status === 'pending').length;
+    const pending = items.filter(i => i.Status === 'pending').length;
     document.getElementById('recentBadge').textContent = pending;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(timestamp) {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Baru saja';
+    if (minutes < 60) return minutes + ' menit lalu';
+    if (hours < 24) return hours + ' jam lalu';
+    return days + ' hari lalu';
 }
 
 // ============================================================
@@ -1685,62 +1440,161 @@ function openForm(item) {
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('itemForm');
     
+    // Set tanggal default (besok)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('itemTanggal').value = tomorrow.toISOString().split('T')[0];
+    
     if (item) {
-        editId = item.id;
-        document.getElementById('editId').value = item.id;
-        document.getElementById('itemBarcode').value = item.barcode || '';
-        document.getElementById('itemName').value = item.name;
-        document.getElementById('itemQuantity').value = item.quantity;
-        document.getElementById('itemCategory').value = item.category || 'Lainnya';
-        document.getElementById('itemNote').value = item.note || '';
-        title.innerHTML = '<i class="fas fa-edit"></i> Edit Barang';
+        // Edit mode
+        editId = item.ID || item.id;
+        document.getElementById('editId').value = editId;
+        document.getElementById('itemBarcode').value = item.Barcode || item.barcode || '';
+        document.getElementById('itemSku').value = item.SKU || item.sku || '';
+        document.getElementById('itemName').value = item['Nama Barang'] || item.name || '';
+        document.getElementById('itemQty').value = item.Qty || item.qty || '';
+        document.getElementById('itemLokasi').value = item.Lokasi || item.lokasi || '';
+        document.getElementById('itemPic').value = item.PIC || item.pic || '';
+        document.getElementById('itemCatatan').value = item.Catatan || item.catatan || '';
+        title.innerHTML = '<i class="fas fa-edit"></i> Edit Replenish';
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Update';
     } else {
+        // Add mode
         editId = null;
         document.getElementById('editId').value = '';
         document.getElementById('itemBarcode').value = '';
+        document.getElementById('itemSku').value = '';
         document.getElementById('itemName').value = '';
-        document.getElementById('itemQuantity').value = '';
-        document.getElementById('itemNote').value = '';
-        document.getElementById('itemCategory').value = 'Makanan';
-        title.innerHTML = '<i class="fas fa-plus-circle"></i> Tambah Barang';
+        document.getElementById('itemQty').value = '';
+        document.getElementById('itemLokasi').value = '';
+        document.getElementById('itemPic').value = '';
+        document.getElementById('itemCatatan').value = '';
+        document.getElementById('productFound').classList.remove('show');
+        title.innerHTML = '<i class="fas fa-plus-circle"></i> Tambah Replenish';
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Simpan';
     }
     
     modal.classList.add('show');
-    setTimeout(() => document.getElementById('itemName').focus(), 300);
+    setTimeout(() => document.getElementById('itemBarcode').focus(), 300);
 }
 
 function closeForm() {
     document.getElementById('modalForm').classList.remove('show');
     editId = null;
+    isSubmitting = false;
 }
 
-function saveItem(e) {
+async function saveItem(e) {
     e.preventDefault();
     
-    const barcode = document.getElementById('itemBarcode').value.trim();
-    const name = document.getElementById('itemName').value.trim();
-    const quantity = document.getElementById('itemQuantity').value;
-    const category = document.getElementById('itemCategory').value;
-    const note = document.getElementById('itemNote').value.trim();
-    const editId = document.getElementById('editId').value;
+    if (isSubmitting) return;
+    isSubmitting = true;
     
-    if (!name || !quantity) {
-        showToast('⚠️ Nama dan jumlah harus diisi', 'warning');
-        return;
+    const btn = document.getElementById('submitBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+    
+    try {
+        const barcode = document.getElementById('itemBarcode').value.trim();
+        const sku = document.getElementById('itemSku').value.trim();
+        const name = document.getElementById('itemName').value.trim();
+        const qty = parseInt(document.getElementById('itemQty').value);
+        const lokasi = document.getElementById('itemLokasi').value.trim();
+        const pic = document.getElementById('itemPic').value.trim();
+        const tanggal = document.getElementById('itemTanggal').value;
+        const catatan = document.getElementById('itemCatatan').value.trim();
+        const editId = document.getElementById('editId').value;
+        
+        if (!name || !qty || !lokasi) {
+            showToast('⚠️ Nama, Qty dan Lokasi wajib diisi', 'warning');
+            return;
+        }
+        
+        const data = {
+            sku: sku,
+            name: name,
+            barcode: barcode,
+            qty: qty,
+            lokasi: lokasi,
+            pic: pic || '',
+            tanggal: tanggal || '',
+            catatan: catatan || ''
+        };
+        
+        if (editId) {
+            await updateReplenish(editId, data);
+            showToast('✅ Data berhasil diupdate', 'success');
+        } else {
+            const result = await createReplenish(data);
+            // Add to history
+            history.unshift({
+                action: 'Tambah',
+                itemName: name,
+                qty: qty,
+                timestamp: Date.now()
+            });
+            showToast('✅ Data berhasil disimpan', 'success');
+        }
+        
+        closeForm();
+        await refreshData();
+        
+    } catch (error) {
+        showToast('❌ Gagal menyimpan: ' + error.message, 'error');
+    } finally {
+        isSubmitting = false;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
-    
-    if (editId) {
-        updateItem(editId, name, quantity, category, note, barcode);
-    } else {
-        addItem(name, quantity, category, note, barcode);
-    }
-    
-    closeForm();
 }
 
 function editItem(id) {
-    const item = items.find(i => i.id === id);
+    const item = items.find(i => (i.ID || i.id) === id);
     if (item) openForm(item);
+}
+
+async function deleteItem(id) {
+    if (!confirm('Yakin ingin menghapus item ini?')) return;
+    
+    try {
+        const item = items.find(i => (i.ID || i.id) === id);
+        await deleteReplenish(id);
+        
+        history.unshift({
+            action: 'Hapus',
+            itemName: item ? item['Nama Barang'] || item.name || 'Unknown' : 'Unknown',
+            qty: item ? item.Qty || item.qty || 0 : 0,
+            timestamp: Date.now()
+        });
+        
+        showToast('🗑️ Barang dihapus', 'warning');
+        await refreshData();
+    } catch (error) {
+        showToast('❌ Gagal menghapus: ' + error.message, 'error');
+    }
+}
+
+async function toggleStatus(id) {
+    try {
+        const item = items.find(i => (i.ID || i.id) === id);
+        if (!item) return;
+        
+        const newStatus = item.Status === 'pending' ? 'done' : 'pending';
+        await updateReplenish(id, { status: newStatus });
+        
+        history.unshift({
+            action: newStatus === 'done' ? 'Selesai' : 'Batal Selesai',
+            itemName: item['Nama Barang'] || item.name || 'Unknown',
+            qty: item.Qty || item.qty || 0,
+            timestamp: Date.now()
+        });
+        
+        showToast(newStatus === 'done' ? '✅ Tandai selesai' : '↩️ Batal selesai', 'success');
+        await refreshData();
+    } catch (error) {
+        showToast('❌ Gagal update status: ' + error.message, 'error');
+    }
 }
 
 function filterItems() {
@@ -1748,25 +1602,171 @@ function filterItems() {
 }
 
 // ============================================================
-//  UTILITY FUNCTIONS
+//  BARCODE LOOKUP
 // ============================================================
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+let lookupTimeout = null;
+
+async function checkBarcode() {
+    const barcode = document.getElementById('itemBarcode').value.trim();
+    const foundDiv = document.getElementById('productFound');
+    const skuField = document.getElementById('itemSku');
+    const nameField = document.getElementById('itemName');
+    
+    // Reset
+    foundDiv.classList.remove('show');
+    
+    if (barcode.length < 5) return;
+    
+    // Debounce
+    clearTimeout(lookupTimeout);
+    lookupTimeout = setTimeout(async () => {
+        try {
+            const product = await lookupProductByBarcode(barcode);
+            
+            if (product) {
+                skuField.value = product.sku || '';
+                nameField.value = product.name || '';
+                document.getElementById('foundSku').textContent = `SKU: ${product.sku || '-'}`;
+                foundDiv.classList.add('show');
+                showToast(`✅ Ditemukan: ${product.name}`, 'success');
+            } else {
+                showToast('⚠️ Barcode tidak ditemukan di Master', 'warning');
+            }
+        } catch (error) {
+            console.error('Lookup error:', error);
+        }
+    }, 500);
 }
 
-function formatTime(timestamp) {
-    const diff = Date.now() - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+// ============================================================
+//  BARCODE SCANNER
+// ============================================================
+
+async function startScanner() {
+    const overlay = document.getElementById('scannerOverlay');
+    const video = document.getElementById('scannerVideo');
+    const status = document.getElementById('scannerStatus');
     
-    if (minutes < 1) return 'Baru saja';
-    if (minutes < 60) return minutes + ' menit lalu';
-    if (hours < 24) return hours + ' jam lalu';
-    return days + ' hari lalu';
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('❌ Kamera tidak didukung', 'error');
+        return;
+    }
+    
+    const isSupported = 'BarcodeDetector' in window;
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        
+        video.srcObject = stream;
+        scannerStream = stream;
+        await video.play();
+        
+        overlay.classList.add('show');
+        scannerActive = true;
+        status.textContent = '📷 Arahkan kamera ke barcode...';
+        
+        if (isSupported) {
+            scannerBarcodeDetector = new BarcodeDetector({
+                formats: ['aztec', 'code_128', 'code_39', 'code_93', 'codabar',
+                         'data_matrix', 'ean_13', 'ean_8', 'itf', 'pdf417',
+                         'qr_code', 'upc_a', 'upc_e']
+            });
+            scanLoop();
+        } else {
+            status.textContent = 'ℹ️ Scan otomatis tidak tersedia. Masukkan barcode manual.';
+        }
+        
+    } catch (error) {
+        console.error('Camera error:', error);
+        showToast('❌ Gagal akses kamera', 'error');
+        status.textContent = '❌ Gagal akses kamera';
+    }
+}
+
+async function scanLoop() {
+    if (!scannerActive) return;
+    
+    const video = document.getElementById('scannerVideo');
+    const status = document.getElementById('scannerStatus');
+    
+    if (!scannerBarcodeDetector || !video || video.readyState < 2) {
+        setTimeout(scanLoop, 100);
+        return;
+    }
+    
+    try {
+        const barcodes = await scannerBarcodeDetector.detect(video);
+        
+        if (barcodes.length > 0) {
+            const barcode = barcodes[0].rawValue;
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            status.textContent = `✅ Barcode terdeteksi: ${barcode}`;
+            status.style.background = 'rgba(5, 150, 105, 0.8)';
+            
+            setTimeout(() => {
+                stopScanner(barcode);
+            }, 1500);
+            return;
+        }
+        
+        requestAnimationFrame(scanLoop);
+        
+    } catch (error) {
+        console.error('Scan error:', error);
+        setTimeout(scanLoop, 100);
+    }
+}
+
+function stopScanner(barcodeValue) {
+    scannerActive = false;
+    
+    if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+    }
+    
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = null;
+    video.load();
+    
+    document.getElementById('scannerOverlay').classList.remove('show');
+    
+    const status = document.getElementById('scannerStatus');
+    status.textContent = '📷 Mengarahkan kamera ke barcode...';
+    status.style.background = '';
+    
+    if (barcodeValue) {
+        document.getElementById('itemBarcode').value = barcodeValue;
+        checkBarcode();
+        // Auto focus ke field qty setelah scan
+        setTimeout(() => document.getElementById('itemQty').focus(), 300);
+    }
+}
+
+function toggleFlashlight() {
+    if (!scannerStream) return;
+    
+    const track = scannerStream.getVideoTracks()[0];
+    if (!track) return;
+    
+    try {
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        if (capabilities.torch) {
+            const current = track.getSettings().torch;
+            track.applyConstraints({
+                advanced: [{ torch: !current }]
+            });
+            showToast(current ? '💡 Lampu mati' : '💡 Lampu menyala', 'info');
+        } else {
+            showToast('ℹ️ Lampu kilat tidak tersedia', 'warning');
+        }
+    } catch (e) {
+        console.warn('Flashlight error:', e);
+    }
 }
 
 // ============================================================
@@ -1790,29 +1790,6 @@ function showToast(message, type = 'info') {
 }
 
 // ============================================================
-//  REFRESH / CLEAR
-// ============================================================
-
-function refreshData() {
-    const btn = document.getElementById('refreshBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    setTimeout(() => {
-        renderAll();
-        btn.innerHTML = '<i class="fas fa-sync"></i>';
-        showToast('🔄 Data diperbarui', 'success');
-    }, 500);
-}
-
-function clearHistory() {
-    if (!confirm('Yakin ingin menghapus semua riwayat?')) return;
-    history = [];
-    saveData();
-    renderHistory();
-    showToast('🗑️ Riwayat dihapus', 'warning');
-}
-
-// ============================================================
 //  OFFLINE SUPPORT
 // ============================================================
 
@@ -1822,96 +1799,14 @@ function setupOfflineListener() {
     function updateOffline() {
         if (!navigator.onLine) {
             badge.classList.add('show');
-            updateSyncStatus('Offline - Data disimpan lokal', 'offline');
         } else {
             badge.classList.remove('show');
-            updateSyncStatus('Online - Siap sync', 'online');
-            // Auto sync when back online
-            if (syncQueue.length > 0) {
-                showToast('📡 Kembali online, menyinkronkan...', 'info');
-                setTimeout(syncToSpreadsheet, 2000);
-            }
         }
     }
     
     window.addEventListener('online', updateOffline);
     window.addEventListener('offline', updateOffline);
     updateOffline();
-}
-
-// ============================================================
-//  SERVICE WORKER (PWA)
-// ============================================================
-
-function setupServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        // Register SW (will be served from the same origin)
-        try {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('✅ Service Worker registered'))
-                .catch(() => console.log('ℹ️ SW registration skipped'));
-        } catch (e) {}
-    }
-}
-
-// ============================================================
-//  SERVICE WORKER SCRIPT (inline)
-// ============================================================
-
-function registerServiceWorker() {
-    const swCode = `
-        const CACHE_NAME = 'replenish-v2';
-        const urlsToCache = [
-            '/',
-            '/index.html',
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
-        ];
-        
-        self.addEventListener('install', event => {
-            event.waitUntil(
-                caches.open(CACHE_NAME)
-                    .then(cache => cache.addAll(urlsToCache))
-                    .then(() => self.skipWaiting())
-            );
-        });
-        
-        self.addEventListener('activate', event => {
-            event.waitUntil(
-                caches.keys().then(cacheNames => {
-                    return Promise.all(
-                        cacheNames.map(name => {
-                            if (name !== CACHE_NAME) {
-                                return caches.delete(name);
-                            }
-                        })
-                    );
-                }).then(() => self.clients.claim())
-            );
-        });
-        
-        self.addEventListener('fetch', event => {
-            event.respondWith(
-                caches.match(event.request)
-                    .then(response => response || fetch(event.request))
-                    .catch(() => {
-                        if (event.request.mode === 'navigate') {
-                            return caches.match('/');
-                        }
-                    })
-            );
-        });
-    `;
-    
-    try {
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const url = URL.createObjectURL(blob);
-        
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(url)
-                .then(reg => console.log('✅ SW registered'))
-                .catch(() => {});
-        }
-    } catch (e) {}
 }
 
 // ============================================================
@@ -1928,11 +1823,6 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         openForm();
     }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        syncToSpreadsheet();
-    }
 });
 
 // ============================================================
@@ -1940,8 +1830,8 @@ document.addEventListener('keydown', (e) => {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    init();
-    registerServiceWorker();
+    setupOfflineListener();
+    refreshData();
     
     document.getElementById('modalForm').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeForm();
@@ -1960,16 +1850,15 @@ window.editItem = editItem;
 window.deleteItem = deleteItem;
 window.toggleStatus = toggleStatus;
 window.refreshData = refreshData;
+window.syncData = syncData;
 window.filterItems = filterItems;
-window.clearHistory = clearHistory;
 window.startScanner = startScanner;
 window.stopScanner = stopScanner;
 window.toggleFlashlight = toggleFlashlight;
-window.syncToSpreadsheet = syncToSpreadsheet;
+window.checkBarcode = checkBarcode;
 
 console.log('🚀 Replenish Tracker Pro siap!');
 console.log('📦 ' + items.length + ' items loaded');
-console.log('📡 ' + syncQueue.length + ' items pending sync');
 </script>
 
 </body>
